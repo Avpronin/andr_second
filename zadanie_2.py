@@ -1,5 +1,7 @@
+#!/usr/bin/env python2
 # Task 2
 # Function checks first list of filling and sorts it for next oprations.
+import sys
 def check_fill_sort(s1, full_count):
     if len(s1) == full_count:
         s1.sort()
@@ -14,7 +16,8 @@ def output_complex_list(complex_list, number):
     return output_string
         
         
-log_file = 'log.txt'
+log_file = sys.argv[1]
+first_line = True
 count = -1  # First line of file doesn't contain request, so it doesn't need.
 s = []
 s_min_brow = []  # List of requests with fastest time of loading trough the browser.
@@ -26,10 +29,12 @@ curl_max = 0
 curl_min = 0
 brow_max = 0
 brow_min = 0
+curl_brow_drop = 0
 curl_min_line = ''
 curl_max_line = ''
 brow_min_line = ''
 brow_max_line = ''
+curl_brow_drop_line = ''
 
 pct_max_brow = 5  # Percent of slowest requests for point 2) in the task.
 
@@ -40,33 +45,25 @@ s_max_brow_count = int(round(count*pct_max_brow*0.01))
 
 for line in open(log_file).xreadlines():
     s = line.split(',')
-    if len(s) == 6:
+    if not first_line:
         curl = float(s[2])  # Time of curl loading in current request
         brow = float(s[3])  # Time of browser loading in current request
+        drop = abs(curl - brow)
 
         # For point 1)
         curl_sum = curl_sum + curl
         brow_sum = brow_sum + brow
 
         # Solving 3)
-        if curl < curl_min or curl_min_line == '':
-            curl_min = curl
-            curl_min_line = line
-        if curl > curl_max or curl_max_line == '':
-            curl_max = curl
-            curl_max_line = line
-        if brow < brow_min or brow_min_line == '':
-            brow_min = brow
-            brow_min_line = line
-        if brow > brow_max or brow_max_line == '':
-            brow_max = brow
-            brow_max_line = line
-
+        if drop > curl_brow_drop or curl_brow_drop_line == '':
+            curl_brow_drop = drop
+            curl_brow_drop_line = line
+        
         # Solving 4): 10 minimal brow times for www.somesite/shop/...
         if len(s_min_brow) < s_min_brow_count and line.find('www.somesite.ru/shop/') != -1:
             s_min_brow.append([float(s[3]), line])
 
-        if check_fill_sort(s_min_brow, s_min_brow_count) and line.find('www.somesite.ru/shop/') != -1:
+        if check_fill_sort(s_min_brow, s_min_brow_count) and 'www.somesite.ru/shop/' in line:
             for i in range(s_min_brow_count - 1):
                 if brow < s_min_brow[0][0]:  # esli minimal'nii
                     s_min_brow.insert(0, [brow, line])
@@ -89,9 +86,10 @@ for line in open(log_file).xreadlines():
                     s_max_brow.insert(i+1, [brow, line])
                     s_max_brow.remove(s_max_brow[0])
                     break
+    first_line = False
                     
 print '1) curl_average = '+str(round(curl_sum/count, 3)) +', browser_average = ' + str(round(brow_sum/count, 6))+'\n'
 print '2) 5% of slowest loading requests through the browser:\n' + output_complex_list(s_max_brow, 1)
-print '3) curl_max_drop:\n' +str(curl_min_line) + str(curl_max_line) + '   browser_max_drop:\n' + str(brow_min_line) + brow_max_line
+print '3) curl_brow_max_drop:\n' +str(curl_brow_drop_line)
 print '4) 10 fastest loading pages of shops:\n' + output_complex_list(s_min_brow, 1)
 
